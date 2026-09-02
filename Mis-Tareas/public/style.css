@@ -1,0 +1,71 @@
+*{
+    box-sizing: border-box;
+}
+body{
+    margin: auto;
+    padding: 5x;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #faffb8;
+}
+main{
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+
+}
+.admin-tareas{
+    background-color: #dac5ee;
+    padding: 25px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    color: #443755;
+}
+.admin-tareas h1{
+    margin-top: 0;
+    text-align: enter;
+
+}
+#FormTarea{
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+#titulo, #descripcion{
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+}
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+}
+.lista-tareas {
+    background-color: rgb(255, 253, 233);
+    padding: 25px;
+    border-radius: 10px;
+}
+.lista-tareas h2{
+    margin-top: 0;
+}
+.tarea h3{
+    margin-top: 0;
+
+}
+.tarea p{
+    margin: 8px 0;
+}
+.acciones {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+.tarea.completada {
+    opacity: 0.6;
+    
+}
+.tarea.completada h3 {
+    text-decoration: line-through;
+}

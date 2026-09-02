@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Tareas</title>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+    <main>
+        <section class="admin-tareas">
+            <h1>Administrador de Tareas</h1>
+            <form id="FormTarea">
+                <input
+                type="text"
+                id="titulo"
+                placeholder="Título de la Tarea"
+                required>
+                <textarea
+                 id="descripcion"
+                 placeholder="descripcion"
+                 required></textarea>
+                 <button type="submit">Agregar</button>
+            </form>
+        </section>
+        <section class="lista-tareas">
+            <h2>Mis Tareas</h2>
+            <div id="ListaTareas">
+
+            </div>
+        </section>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
