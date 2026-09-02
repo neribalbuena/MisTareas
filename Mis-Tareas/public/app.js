@@ -1,133 +1,58 @@
-// Buscamos los elementos del HTML
-const formTarea = document.getElementById("FormTarea");
+// Buscamos los elementos principales en el HTML
+const formulario = document.getElementById("FormTarea");
 const listaTareas = document.getElementById("ListaTareas");
 
-// Cargar las tareas cuando se abre la página
+// ====================================
+// 1. CARGAR Y MOSTRAR LAS TAREAS
+// ====================================
 async function cargarTareas() {
     try {
         const respuesta = await fetch("/API/Tareas");
-
-        if (!respuesta.ok) {
-            throw new Error("No se pudieron obtener las tareas");
-        }
-
         const tareas = await respuesta.json();
 
         listaTareas.innerHTML = "";
 
         tareas.forEach(tarea => {
-            mostrarTarea(tarea);
+            const elemento = document.createElement("div");
+            elemento.classList.add("tarea");
+
+            // Si está completada, agregamos la clase visual
+            if (tarea.completar) {
+                elemento.classList.add("completada");
+            }
+
+            elemento.innerHTML = `
+                <h3>${tarea.titulo}</h3>
+                <p>${tarea.descripcion}</p>
+                <p><strong>Fecha:</strong> ${tarea.fecha}</p>
+                <p><strong>Estado:</strong> ${tarea.completar ? "Completada" : "Pendiente"}</p>
+                
+                <div class="acciones">
+                    <button onclick="cambiarEstado(${tarea.id}, ${tarea.completar})">
+                        ${tarea.completar ? "Desmarcar" : "Completar"}
+                    </button>
+                    <button onclick="eliminarTarea(${tarea.id})">
+                        Borrar
+                    </button>
+                </div>
+            `;
+
+            listaTareas.appendChild(elemento);
         });
-
     } catch (error) {
-        console.error("Error:", error);
-        listaTareas.innerHTML = "<p>Error al cargar las tareas.</p>";
+        console.error("Error al cargar tareas:", error);
     }
 }
 
-
-// Mostrar una tarea en la página
-function mostrarTarea(tarea) {
-
-    const elemento = document.createElement("div");
-    elemento.classList.add("tarea");
-
-    if (tarea.completar) {
-        elemento.classList.add("completada");
-    }
-
-    elemento.innerHTML = `
-        <h3>${tarea.titulo}</h3>
-
-        <p>${tarea.descripcion}</p>
-
-        <p>
-            Estado:
-            ${tarea.completar ? "Completada" : "Pendiente"}
-        </p>
-
-        <p>
-            Fecha: ${tarea.fecha}
-        </p>
-
-        <button class="btn-completar">
-            ${tarea.completar ? "Desmarcar" : "Completar"}
-        </button>
-
-        <button class="btn-eliminar">
-            Eliminar
-        </button>
-    `;
-
-
-    // Botón completar / desmarcar
-    const botonCompletar = elemento.querySelector(".btn-completar");
-
-    botonCompletar.addEventListener("click", async () => {
-
-        try {
-            const respuesta = await fetch(`/API/TAREAS/${tarea.id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    ...tarea,
-                    completar: !tarea.completar
-                })
-            });
-
-            if (!respuesta.ok) {
-                throw new Error("No se pudo actualizar la tarea");
-            }
-
-            cargarTareas();
-
-        } catch (error) {
-            console.error("Error:", error);
-            alert("No se pudo actualizar la tarea");
-        }
-    });
-
-
-    // Botón eliminar
-    const botonEliminar = elemento.querySelector(".btn-eliminar");
-
-    botonEliminar.addEventListener("click", async () => {
-
-        try {
-            const respuesta = await fetch(`/API/TAREAS/${tarea.id}`, {
-                method: "DELETE"
-            });
-
-            if (!respuesta.ok) {
-                throw new Error("No se pudo eliminar la tarea");
-            }
-
-            cargarTareas();
-
-        } catch (error) {
-            console.error("Error:", error);
-            alert("No se pudo eliminar la tarea");
-        }
-    });
-
-
-    listaTareas.appendChild(elemento);
-}
-
-
-// Agregar una nueva tarea
-formTarea.addEventListener("submit", async (evento) => {
-
-    // Evita que el formulario recargue la página
+// ====================================
+// 2. AGREGAR NUEVA TAREA
+// ====================================
+formulario.addEventListener("submit", async (evento) => {
     evento.preventDefault();
 
-    // Obtener los datos del formulario
     const titulo = document.getElementById("titulo").value;
     const descripcion = document.getElementById("descripcion").value;
 
-    // Crear la nueva tarea
     const nuevaTarea = {
         titulo: titulo,
         descripcion: descripcion,
@@ -135,37 +60,48 @@ formTarea.addEventListener("submit", async (evento) => {
         fecha: new Date().toLocaleDateString()
     };
 
+    await fetch("/API/Tareas", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(nuevaTarea)
+    });
 
-    try {
-
-        const respuesta = await fetch("/API/Tareas", {
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify(nuevaTarea)
-        });
-
-
-        if (!respuesta.ok) {
-            throw new Error("No se pudo agregar la tarea");
-        }
-
-
-        // Limpiar el formulario
-        formTarea.reset();
-
-        // Volver a cargar las tareas
-        cargarTareas();
-
-    } catch (error) {
-        console.error("Error:", error);
-        alert("No se pudo agregar la tarea");
-    }
+    formulario.reset();
+    cargarTareas();
 });
 
+// ====================================
+// 3. CAMBIAR ESTADO (COMPLETAR / DESMARCAR)
+// ====================================
+async function cambiarEstado(id, estadoActual) {
+    await fetch(`/API/TAREAS/${id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            completar: !estadoActual
+        })
+    });
 
-// Ejecutar al abrir la página
+    cargarTareas();
+}
+
+// ====================================
+// 4. ELIMINAR TAREA
+// ====================================
+async function eliminarTarea(id) {
+    const confirmar = confirm("¿Querés eliminar esta tarea?");
+    if (!confirmar) return;
+
+    await fetch(`/API/TAREAS/${id}`, {
+        method: "DELETE"
+    });
+
+    cargarTareas();
+}
+
+// Ejecutar la carga al abrir la página
 cargarTareas();
