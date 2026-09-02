@@ -1,10 +1,7 @@
 // Buscamos los elementos principales en el HTML
 const formulario = document.getElementById("FormTarea");
 const listaTareas = document.getElementById("ListaTareas");
-
-// ====================================
 // 1. CARGAR Y MOSTRAR LAS TAREAS
-// ====================================
 async function cargarTareas() {
     try {
         const respuesta = await fetch("/API/Tareas");
@@ -44,9 +41,7 @@ async function cargarTareas() {
     }
 }
 
-// ====================================
 // 2. AGREGAR NUEVA TAREA
-// ====================================
 formulario.addEventListener("submit", async (evento) => {
     evento.preventDefault();
 
@@ -72,9 +67,8 @@ formulario.addEventListener("submit", async (evento) => {
     cargarTareas();
 });
 
-// ====================================
+
 // 3. CAMBIAR ESTADO (COMPLETAR / DESMARCAR)
-// ====================================
 async function cambiarEstado(id, estadoActual) {
     await fetch(`/API/TAREAS/${id}`, {
         method: "PUT",
@@ -89,9 +83,8 @@ async function cambiarEstado(id, estadoActual) {
     cargarTareas();
 }
 
-// ====================================
+
 // 4. ELIMINAR TAREA
-// ====================================
 async function eliminarTarea(id) {
     const confirmar = confirm("¿Querés eliminar esta tarea?");
     if (!confirmar) return;
