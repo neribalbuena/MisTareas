@@ -1,349 +1,92 @@
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
+const app = express();
 const PORT = 3000;
 
-const archivoTareas = path.join(__dirname, "tareas.json");
-
-
-// Leer las tareas del archivo JSON
-function leerTareas() {
-    const datos = fs.readFileSync(archivoTareas, "utf8");
-
-    return JSON.parse(datos);
-}
-
-
-// Guardar las tareas en el archivo JSON
-function guardarTareas(tareas) {
-    fs.writeFileSync(
-        archivoTareas,
-        JSON.stringify(tareas, null, 2)
-    );
-}
-
-
-const server = http.createServer((req, res) => {
-
-    const url = req.url;
-    const metodo = req.method;
-
-
-    // =========================
-    // FRONTEND
-    // =========================
-
-    if (url === "/" && metodo === "GET") {
-
-        const archivo = path.join(
-            __dirname,
-            "public",
-            "index.html"
-        );
-
-        fs.readFile(archivo, (error, contenido) => {
-
-            if (error) {
-                res.writeHead(500, {
-                    "Content-Type": "text/plain"
-                });
-
-                res.end("Error al cargar index.html");
-
-                return;
-            }
-
-            res.writeHead(200, {
-                "Content-Type": "text/html"
-            });
-
-            res.end(contenido);
-        });
-
-        return;
-    }
-
-
-    if (url === "/styles.css" && metodo === "GET") {
-
-        const archivo = path.join(
-            __dirname,
-            "public",
-            "styles.css"
-        );
-
-        fs.readFile(archivo, (error, contenido) => {
-
-            if (error) {
-                res.writeHead(500);
-                res.end("Error al cargar styles.css");
-
-                return;
-            }
-
-            res.writeHead(200, {
-                "Content-Type": "text/css"
-            });
-
-            res.end(contenido);
-        });
-
-        return;
-    }
-
-
-    if (url === "/app.js" && metodo === "GET") {
-
-        const archivo = path.join(
-            __dirname,
-            "public",
-            "app.js"
-        );
-
-        fs.readFile(archivo, (error, contenido) => {
-
-            if (error) {
-                res.writeHead(500);
-                res.end("Error al cargar app.js");
-
-                return;
-            }
-
-            res.writeHead(200, {
-                "Content-Type": "application/javascript"
-            });
-
-            res.end(contenido);
-        });
-
-        return;
-    }
-
-
-    // =========================
-    // GET - OBTENER TAREAS
-    // =========================
-
-    if (
-        url === "/API/Tareas" &&
-        metodo === "GET"
-    ) {
-
-        const tareas = leerTareas();
-
-        res.writeHead(200, {
-            "Content-Type": "application/json"
-        });
-
-        res.end(JSON.stringify(tareas));
-
-        return;
-    }
-
-
-    // =========================
-    // POST - CREAR TAREA
-    // =========================
-
-    if (
-        url === "/API/Tareas" &&
-        metodo === "POST"
-    ) {
-
-        let cuerpo = "";
-
-        req.on("data", parte => {
-            cuerpo += parte;
-        });
-
-
-        req.on("end", () => {
-
-            const datos = JSON.parse(cuerpo);
-
-            const tareas = leerTareas();
-
-
-            const nuevaTarea = {
-
-                id: Date.now(),
-
-                titulo: datos.titulo,
-
-                descripcion: datos.descripcion,
-
-                completada: false,
-
-                fecha: new Date()
-                    .toISOString()
-                    .split("T")[0]
-            };
-
-
-            tareas.push(nuevaTarea);
-
-            guardarTareas(tareas);
-
-
-            res.writeHead(201, {
-                "Content-Type": "application/json"
-            });
-
-            res.end(JSON.stringify(nuevaTarea));
-        });
-
-        return;
-    }
-
-
-    // =========================
-    // PUT - EDITAR TAREA
-    // =========================
-
-    if (
-        url.startsWith("/API/Tareas/") &&
-        metodo === "PUT"
-    ) {
-
-        const partes = url.split("/");
-
-        const id = Number(partes[3]);
-
-
-        let cuerpo = "";
-
-        req.on("data", parte => {
-            cuerpo += parte;
-        });
-
-
-        req.on("end", () => {
-
-            const datos = JSON.parse(cuerpo);
-
-            const tareas = leerTareas();
-
-
-            const indice = tareas.findIndex(
-                tarea => tarea.id === id
-            );
-
-
-            if (indice === -1) {
-
-                res.writeHead(404, {
-                    "Content-Type": "application/json"
-                });
-
-                res.end(
-                    JSON.stringify({
-                        mensaje: "Tarea no encontrada"
-                    })
-                );
-
-                return;
-            }
-
-
-            tareas[indice] = {
-
-                ...tareas[indice],
-
-                ...datos,
-
-                id: tareas[indice].id
-            };
-
-
-            guardarTareas(tareas);
-
-
-            res.writeHead(200, {
-                "Content-Type": "application/json"
-            });
-
-            res.end(
-                JSON.stringify(tareas[indice])
-            );
-        });
-
-        return;
-    }
-
-
-    // =========================
-    // DELETE - ELIMINAR TAREA
-    // =========================
-
-    if (
-        url.startsWith("/API/Tareas/") &&
-        metodo === "DELETE"
-    ) {
-
-        const partes = url.split("/");
-
-        const id = Number(partes[3]);
-
-
-        const tareas = leerTareas();
-
-
-        const nuevasTareas = tareas.filter(
-            tarea => tarea.id !== id
-        );
-
-
-        if (nuevasTareas.length === tareas.length) {
-
-            res.writeHead(404, {
-                "Content-Type": "application/json"
-            });
-
-            res.end(
-                JSON.stringify({
-                    mensaje: "Tarea no encontrada"
-                })
-            );
-
-            return;
+// Middleware para que el servidor entienda JSON y sirva archivos estáticos
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Ruta GET: Obtener las tareas desde el archivo tareas.json
+app.get('/API/Tareas', (req, res) => {
+    fs.readFile('tareas.json', 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: "No se pudo leer el archivo de tareas" });
         }
+        res.json(JSON.parse(data || '[]'));
+    });
+});
 
+// Ruta POST: Agregar una nueva tarea
+app.post('/API/Tareas', (req, res) => {
+    fs.readFile('tareas.json', 'utf8', (err, data) => {
+        const tareas = data ? JSON.parse(data) : [];
+        
+        const nuevaTarea = {
+            id: Date.now(), // Genera un ID único basado en la hora
+            titulo: req.body.titulo,
+            descripcion: req.body.descripcion,
+            completar: false,
+            fecha: req.body.fecha || new Date().toLocaleDateString()
+        };
 
-        guardarTareas(nuevasTareas);
+        tareas.push(nuevaTarea);
 
+        fs.writeFile('tareas.json', JSON.stringify(tareas, null, 2), (err) => {
+            if (err) {
+                return res.status(500).json({ error: "No se pudo guardar la tarea" });
+            }
+            res.json(nuevaTarea);
+        });
+    });
+});
 
-        res.writeHead(200, {
-            "Content-Type": "application/json"
+// Ruta PUT: Modificar el estado de una tarea (completar / desmarcar)
+app.put('/API/TAREAS/:id', (req, res) => {
+    const idTarea = Number(req.params.id);
+
+    fs.readFile('tareas.json', 'utf8', (err, data) => {
+        let tareas = data ? JSON.parse(data) : [];
+        
+        tareas = tareas.map(tarea => {
+            if (tarea.id === idTarea) {
+                return { ...tarea, completar: req.body.completar };
+            }
+            return tarea;
         });
 
-        res.end(
-            JSON.stringify({
-                mensaje: "Tarea eliminada"
-            })
-        );
-
-        return;
-    }
-
-
-    // =========================
-    // RUTA NO ENCONTRADA
-    // =========================
-
-    res.writeHead(404, {
-        "Content-Type": "text/plain"
+        fs.writeFile('tareas.json', JSON.stringify(tareas, null, 2), (err) => {
+            if (err) {
+                return res.status(500).json({ error: "No se pudo actualizar" });
+            }
+            res.json({ mensaje: "Actualizado con éxito" });
+        });
     });
-
-    res.end("Ruta no encontrada");
-
 });
 
+// Ruta DELETE: Borrar una tarea
+app.delete('/API/TAREAS/:id', (req, res) => {
+    const idTarea = Number(req.params.id);
 
-server.listen(PORT, () => {
+    fs.readFile('tareas.json', 'utf8', (err, data) => {
+        let tareas = data ? JSON.parse(data) : [];
+        
+        tareas = tareas.filter(tarea => tarea.id !== idTarea);
 
-    console.log(
-        `Servidor corriendo en http://localhost:${PORT}`
-    );
-
+        fs.writeFile('tareas.json', JSON.stringify(tareas, null, 2), (err) => {
+            if (err) {
+                return res.status(500).json({ error: "No se pudo eliminar" });
+            }
+            res.json({ mensaje: "Eliminado con éxito" });
+        });
+    });
 });
+
+// Iniciar el servidor en el puerto 3000
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
+
+    
